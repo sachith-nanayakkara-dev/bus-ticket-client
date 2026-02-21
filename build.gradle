@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'org.sachith'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+}
+
+application {
+    mainClass = 'org.sachith.client.ClientSimulator'
+}
