@@ -2,31 +2,73 @@ package org.sachith;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ClientSimulator {
 
-    private static final String URL_STRING =
-            "http://localhost:8080/reserve";
+    private static final String BASE_URL =
+            "http://localhost:8080/bus-ticket-server";
 
-    public static void main(String[] args) {
+    private static final int USERS = 100;
 
-        int users = 50;
+    public static void main(String[] args) throws InterruptedException {
 
         ExecutorService executor =
-                Executors.newFixedThreadPool(10);
+                Executors.newFixedThreadPool(USERS);
 
-        for (int i = 1; i <= users; i++) {
+        CountDownLatch readyLatch =
+                new CountDownLatch(USERS);
 
-            int userId = i;
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        HttpClient client =
+                HttpClient.newHttpClient();
+
+        for (int i = 1; i <= USERS; i++) {
+
+            int userId = i+1;
 
             executor.submit(() -> {
 
                 try {
 
-                    sendReservation(userId);
+                    readyLatch.countDown();
+                    startLatch.await();
+
+                    String requestBody = """
+                            {
+                              "origin":"A",
+                              "destination":"D",
+                              "passengers":1,
+                              "paymentAmount":150,
+                              "travelDate":"2026-03-10"
+                            }
+                            """;
+
+                    HttpRequest request =
+                            HttpRequest.newBuilder()
+                                    .uri(URI.create(BASE_URL + "/reserve"))
+                                    .header("Content-Type", "application/json")
+                                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                                    .build();
+
+                    HttpResponse<String> response =
+                            client.send(request,
+                                    HttpResponse.BodyHandlers.ofString());
+
+                    System.out.println(
+                            "User " + userId + ": " +
+                                    response.statusCode() + " -> " +
+                                    response.body()
+                    );
 
                 } catch (Exception e) {
 
@@ -37,47 +79,14 @@ public class ClientSimulator {
             });
         }
 
+        // Wait until all threads are ready
+        readyLatch.await();
+
+        System.out.println("Starting simulation for " + USERS + " users...");
+
+        // Start all at same time
+        startLatch.countDown();
+
         executor.shutdown();
-    }
-
-    private static void sendReservation(int userId)
-            throws Exception {
-
-        URL url = new URL(URL_STRING);
-
-        HttpURLConnection conn =
-                (HttpURLConnection) url.openConnection();
-
-        conn.setRequestMethod("POST");
-
-        conn.setRequestProperty(
-                "Content-Type",
-                "application/json");
-
-        conn.setDoOutput(true);
-
-        String json =
-                """
-                {
-                  "origin":"A",
-                  "destination":"D",
-                  "passengers":1,
-                  "paymentAmount":150,
-                  "travelDate":"2026-02-20"
-                }
-                """;
-
-        OutputStream os =
-                conn.getOutputStream();
-
-        os.write(json.getBytes());
-
-        os.flush();
-
-        int responseCode = conn.getResponseCode();
-
-        System.out.println(
-                "User " + userId +
-                        " response: " + responseCode);
     }
 }

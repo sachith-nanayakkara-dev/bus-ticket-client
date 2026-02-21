@@ -15,5 +15,21 @@ dependencies {
 }
 
 application {
-    mainClass = 'org.sachith.client.ClientSimulator'
+    mainClass = 'org.sachith.ClientSimulator'
+}
+
+jar {
+    archiveFileName = 'bus-ticket-client.jar'
+
+    manifest {
+        attributes(
+                'Main-Class': 'org.sachith.ClientSimulator'
+        )
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
