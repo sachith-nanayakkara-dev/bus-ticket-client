@@ -49,7 +49,8 @@ public class ClientSimulator {
                               "destination":"D",
                               "passengers":1,
                               "paymentAmount":150,
-                              "travelDate":"2026-03-10"
+                              "travelDate":"2026-03-10",
+                              "seats": null
                             }
                             """;
 
